@@ -314,10 +314,10 @@ differentiate (x:xs) = Just $ Stack x [] xs
 -- 'True'.  Order is preserved, and focus moves as described for 'delete'.
 --
 filter :: (a -> Bool) -> Stack a -> Maybe (Stack a)
-filter p (Stack f ls rs) = case L.filter p (f:rs) of
-    f':rs' -> Just $ Stack f' (L.filter p ls) rs'    -- maybe move focus down
-    []     -> case L.filter p ls of                  -- filter back up
-                    f':ls' -> Just $ Stack f' ls' [] -- else up
+filter p (Stack f ls rs) = case L.filter p (f:ls) of
+    f':ls' -> Just $ Stack f' ls' (L.filter p rs)    -- maybe move focus up
+    []     -> case L.filter p rs of
+                    f':rs' -> Just $ Stack f' [] rs' -- else down
                     []     -> Nothing
 
 -- |
@@ -440,19 +440,19 @@ findTag a s = listToMaybe
 
 -- |
 -- /O(n)/. (Complexity due to duplicate check). Insert a new element
--- into the stack, above the currently focused element. The new
+-- into the stack, below the currently focused element. The new
 -- element is given focus; the previously focused element is moved
--- down.
+-- up.
 --
 -- If the element is already in the stackset, the original stackset is
 -- returned unmodified.
 --
 -- Semantics in Huet's paper is that insert doesn't move the cursor.
--- However, we choose to insert above, and move the focus.
+-- However, we choose to insert below, and move the focus.
 --
 insertUp :: Eq a => a -> StackSet i l a s sd -> StackSet i l a s sd
 insertUp a s = if member a s then s else insert
-  where insert = modify (Just $ Stack a [] []) (\(Stack t l r) -> Just $ Stack a l (t:r)) s
+  where insert = modify (Just $ Stack a [] []) (\(Stack t l r) -> Just $ Stack a (t:l) r) s
 
 -- insertDown :: a -> StackSet i l a s sd -> StackSet i l a s sd
 -- insertDown a = modify (Stack a [] []) $ \(Stack t l r) -> Stack a (t:l) r
@@ -465,9 +465,9 @@ insertUp a s = if member a s then s else insert
 --
 --   * delete on an 'Nothing' workspace leaves it Nothing
 --
---   * otherwise, try to move focus to the down
---
 --   * otherwise, try to move focus to the up
+--
+--   * otherwise, try to move focus to the down
 --
 --   * otherwise, you've got an empty workspace, becomes 'Nothing'
 --
